@@ -14,10 +14,16 @@ model_name = os.path.basename(model_url)
 model_path = os.path.join(models_dir, model_name)
 
 def download(url, path):
-    request = urllib.request.urlopen(url)
-    total = int(request.headers.get('Content-Length', 0))
-    with tqdm(total=total, desc='Downloading', unit='B', unit_scale=True, unit_divisor=1024) as progress:
-        urllib.request.urlretrieve(url, path, reporthook=lambda count, block_size, total_size: progress.update(block_size))
+    with urllib.request.urlopen(url) as response:
+        # リダイレクトされた場合も最終的なURLのContent-Lengthを取得
+        total = int(response.headers.get('Content-Length', 0))
+
+        with tqdm(total=total, desc='Downloading', unit='B', unit_scale=True, unit_divisor=1024) as progress:
+            with open(path, 'wb') as f:
+                # データの読み取りと保存
+                for chunk in iter(lambda: response.read(4096), b''):
+                    f.write(chunk)
+                    progress.update(len(chunk))
 
 if not os.path.exists(models_dir):
     os.makedirs(models_dir)
